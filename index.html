@@ -11,492 +11,209 @@
 <link rel="manifest" href="manifest.json">
 <title>정령 디펜스</title>
 <style>
-/* ══════════════════════════════
-   리셋 & 기본
-══════════════════════════════ */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg-deep:#0a0812;--bg-mid:#110d1e;
+  --purple:#7c3aed;--purple-lt:#a855f7;--purple-dim:#4c1d95;
+  --gold:#f59e0b;--gold-lt:#fcd34d;--teal:#2dd4bf;
+  --red:#ef4444;--green:#22c55e;
+  --text:#e2d9f3;--text-dim:#8b7aaa;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg-deep);color:var(--text);
+  font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif;touch-action:none;-webkit-tap-highlight-color:transparent}
+.screen{position:fixed;inset:0;display:none;align-items:center;justify-content:center}
+.screen.active{display:flex}
+#bg-canvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
 
-:root {
-  --bg-deep:    #0a0812;
-  --bg-mid:     #110d1e;
-  --purple:     #7c3aed;
-  --purple-lt:  #a855f7;
-  --purple-dim: #4c1d95;
-  --gold:       #f59e0b;
-  --gold-lt:    #fcd34d;
-  --teal:       #2dd4bf;
-  --red:        #ef4444;
-  --text:       #e2d9f3;
-  --text-dim:   #8b7aaa;
-}
+/* 로딩 */
+#loading-screen{flex-direction:column;gap:20px;background:var(--bg-deep);z-index:10}
+.loading-orb{width:80px;height:80px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,#c084fc,#7c3aed 60%,#3b0764);
+  box-shadow:0 0 40px #7c3aed88;animation:orb-pulse 1.5s ease-in-out infinite}
+@keyframes orb-pulse{0%,100%{transform:scale(1);box-shadow:0 0 40px #7c3aed88}50%{transform:scale(1.1);box-shadow:0 0 70px #a855f7cc}}
+.loading-text{font-size:14px;letter-spacing:4px;color:var(--text-dim);text-transform:uppercase}
+.loading-bar-wrap{width:200px;height:3px;background:#1e1535;border-radius:2px;overflow:hidden}
+.loading-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--purple),var(--purple-lt));border-radius:2px;transition:width .1s linear}
 
-html, body {
-  width: 100%; height: 100%;
-  overflow: hidden;
-  background: var(--bg-deep);
-  color: var(--text);
-  font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
-  touch-action: none;
-  -webkit-tap-highlight-color: transparent;
-}
+/* 인트로 */
+#intro-screen{flex-direction:column;background:var(--bg-deep);z-index:9;padding:40px 60px}
+.intro-lines{max-width:560px;text-align:center}
+.intro-line{font-size:18px;line-height:2;color:var(--text);opacity:0;transform:translateY(10px);transition:opacity .8s ease,transform .8s ease}
+.intro-line.visible{opacity:1;transform:translateY(0)}
+.intro-line.highlight{color:var(--gold-lt);font-size:20px;font-weight:bold;letter-spacing:1px}
+.intro-skip{position:fixed;bottom:30px;right:30px;font-size:12px;color:var(--text-dim);letter-spacing:3px;cursor:pointer;opacity:0;animation:fade-in 1s 2s forwards;background:none;border:none}
+@keyframes fade-in{to{opacity:1}}
 
-/* ══════════════════════════════
-   화면 레이어 시스템
-══════════════════════════════ */
-.screen {
-  position: fixed; inset: 0;
-  display: none;
-  align-items: center; justify-content: center;
-}
-.screen.active { display: flex; }
+/* 타이틀 */
+#title-screen{flex-direction:column;gap:0;z-index:8}
+.title-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 30%,#2d1b6940 0%,transparent 65%),radial-gradient(ellipse at 20% 80%,#1e3a5f30 0%,transparent 50%),var(--bg-deep)}
+.title-portal{position:absolute;top:50%;left:50%;transform:translate(-50%,-60%);width:280px;height:280px;border-radius:50%;border:2px solid #7c3aed44;box-shadow:0 0 60px #7c3aed33,inset 0 0 60px #7c3aed22;animation:portal-rotate 8s linear infinite}
+.title-portal::before{content:"";position:absolute;inset:10px;border-radius:50%;border:1px solid #a855f733;animation:portal-rotate 5s linear infinite reverse}
+.title-portal::after{content:"";position:absolute;inset:25px;border-radius:50%;background:radial-gradient(circle,#1a0a3040 0%,#0a081280 100%);border:1px solid #c084fc22}
+@keyframes portal-rotate{to{transform:rotate(360deg)}}
+.title-content{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:-40px}
+.title-sub{font-size:11px;letter-spacing:8px;color:var(--purple-lt);text-transform:uppercase;opacity:0;animation:fade-in .8s .3s forwards}
+.title-main{font-size:clamp(32px,6vw,52px);font-weight:900;letter-spacing:4px;background:linear-gradient(135deg,#fcd34d,#f59e0b,#fcd34d);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 20px #f59e0b66);opacity:0;animation:title-appear 1s .6s forwards;line-height:1.1}
+@keyframes title-appear{from{opacity:0;transform:translateY(-20px) scale(.9)}to{opacity:1;transform:translateY(0) scale(1)}}
+.title-eng{font-size:clamp(10px,2vw,14px);letter-spacing:12px;color:var(--text-dim);opacity:0;animation:fade-in .8s 1s forwards}
+.title-version{font-size:10px;letter-spacing:3px;color:#4c3a7a;margin-top:4px;opacity:0;animation:fade-in .8s 1.2s forwards}
+.title-buttons{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:48px;opacity:0;animation:fade-in .8s 1.6s forwards}
+.btn-primary{width:220px;padding:16px 0;background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;border-radius:12px;color:#fff;font-size:16px;font-weight:bold;letter-spacing:4px;cursor:pointer;box-shadow:0 4px 20px #7c3aed66;transition:all .2s;font-family:inherit;position:relative;overflow:hidden}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 30px #7c3aed88}
+.btn-secondary{width:220px;padding:12px 0;background:transparent;border:1px solid #4c1d95;border-radius:10px;color:var(--text-dim);font-size:13px;letter-spacing:3px;cursor:pointer;transition:all .2s;font-family:inherit}
+.btn-secondary:hover{border-color:var(--purple-lt);color:var(--text);background:#7c3aed11}
+.title-footer{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);font-size:10px;color:#4c3a7a;letter-spacing:2px;z-index:1;opacity:0;animation:fade-in .8s 2s forwards}
 
-/* ══════════════════════════════
-   파티클 배경 (공통)
-══════════════════════════════ */
-#bg-canvas {
-  position: fixed; inset: 0;
-  width: 100%; height: 100%;
-  pointer-events: none; z-index: 0;
-}
+/* 난이도 선택 */
+#difficulty-screen{flex-direction:column;gap:0;z-index:7;background:var(--bg-deep)}
+.diff-header{display:flex;align-items:center;padding:16px 20px;gap:12px;border-bottom:1px solid #1e1535;width:100%}
+.diff-back{background:none;border:1px solid #2a1f4a;border-radius:8px;color:var(--text-dim);font-size:12px;padding:8px 14px;cursor:pointer;font-family:inherit;transition:all .2s}
+.diff-back:hover{border-color:var(--purple);color:var(--text)}
+.diff-title-txt{font-size:14px;letter-spacing:4px;color:var(--gold);font-weight:bold;flex:1;text-align:center}
+.diff-gold-display{font-size:13px;color:var(--gold-lt);display:flex;align-items:center;gap:6px}
+.diff-content{flex:1;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px}
+.diff-subtitle{font-size:11px;color:var(--text-dim);letter-spacing:2px;text-align:center}
+.diff-flow{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text-dim)}
+.diff-flow-map{padding:5px 10px;border:1px solid #2a1f4a;border-radius:20px;font-size:10px;color:var(--text-dim);background:#110d1e}
+.diff-flow-arrow{color:#4c3a7a;font-size:14px}
+.diff-cards{width:100%;max-width:480px;display:flex;flex-direction:column;gap:12px}
+.diff-card{width:100%;border-radius:14px;overflow:hidden;border:2px solid #2a1f4a;cursor:pointer;transition:all .25s;background:#110d1e}
+.diff-card.easy:hover{border-color:var(--green);box-shadow:0 4px 20px #22c55e44}
+.diff-card.easy.selected{border-color:var(--green);box-shadow:0 0 24px #22c55e55}
+.diff-card.normal:hover{border-color:var(--gold);box-shadow:0 4px 20px #f59e0b44}
+.diff-card.normal.selected{border-color:var(--gold);box-shadow:0 0 24px #f59e0b55}
+.diff-card.hard:hover{border-color:var(--red);box-shadow:0 4px 20px #ef444444}
+.diff-card.hard.selected{border-color:var(--red);box-shadow:0 0 24px #ef444455}
+.diff-card-inner{display:flex;align-items:center;gap:14px;padding:14px 18px}
+.diff-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.diff-card.easy .diff-icon{background:#14532d44}
+.diff-card.normal .diff-icon{background:#78350f44}
+.diff-card.hard .diff-icon{background:#7f1d1d44}
+.diff-info{flex:1}
+.diff-name{font-size:15px;font-weight:bold;margin-bottom:3px}
+.diff-card.easy .diff-name{color:var(--green)}
+.diff-card.normal .diff-name{color:var(--gold)}
+.diff-card.hard .diff-name{color:var(--red)}
+.diff-desc{font-size:10px;color:var(--text-dim);line-height:1.6}
+.diff-wave-info{font-size:10px;margin-top:5px;display:flex;gap:6px}
+.diff-wave-badge{padding:2px 8px;border-radius:10px;font-size:9px;letter-spacing:1px}
+.diff-card.easy .diff-wave-badge{background:#14532d44;color:var(--green)}
+.diff-card.normal .diff-wave-badge{background:#78350f44;color:var(--gold)}
+.diff-card.hard .diff-wave-badge{background:#7f1d1d44;color:var(--red)}
+.diff-check{width:22px;height:22px;border-radius:50%;border:2px solid #2a1f4a;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;transition:all .2s;color:#fff}
+.diff-card.easy.selected .diff-check{background:var(--green);border-color:var(--green)}
+.diff-card.normal.selected .diff-check{background:var(--gold);border-color:var(--gold)}
+.diff-card.hard.selected .diff-check{background:var(--red);border-color:var(--red)}
+.diff-start-btn{width:100%;max-width:480px;padding:14px;background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:bold;letter-spacing:3px;cursor:pointer;font-family:inherit;transition:all .2s}
+.diff-start-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 20px #7c3aed66}
+.diff-start-btn:disabled{opacity:.4;cursor:not-allowed}
 
-/* ══════════════════════════════
-   ① 로딩 화면
-══════════════════════════════ */
-#loading-screen {
-  flex-direction: column; gap: 20px;
-  background: var(--bg-deep); z-index: 10;
-}
-.loading-orb {
-  width: 80px; height: 80px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #c084fc, #7c3aed 60%, #3b0764);
-  box-shadow: 0 0 40px #7c3aed88;
-  animation: orb-pulse 1.5s ease-in-out infinite;
-}
-@keyframes orb-pulse {
-  0%,100% { transform: scale(1);   box-shadow: 0 0 40px #7c3aed88; }
-  50%      { transform: scale(1.1); box-shadow: 0 0 70px #a855f7cc; }
-}
-.loading-text {
-  font-size: 14px; letter-spacing: 4px;
-  color: var(--text-dim); text-transform: uppercase;
-}
-.loading-bar-wrap {
-  width: 200px; height: 3px;
-  background: #1e1535; border-radius: 2px; overflow: hidden;
-}
-.loading-bar-fill {
-  height: 100%; width: 0%;
-  background: linear-gradient(90deg, var(--purple), var(--purple-lt));
-  border-radius: 2px;
-  transition: width 0.1s linear;
-}
+/* 설정 */
+#settings-screen{flex-direction:column;gap:20px;z-index:7;background:var(--bg-deep);padding:40px}
+.settings-title{font-size:18px;letter-spacing:4px;color:var(--gold);font-weight:bold}
+.settings-row{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:400px;padding:14px 0;border-bottom:1px solid #1e1535;font-size:14px;color:var(--text)}
+.settings-row label{color:var(--text-dim);font-size:12px;letter-spacing:2px}
+.toggle-btn{width:48px;height:26px;border-radius:13px;border:none;background:#2a1f4a;cursor:pointer;position:relative;transition:background .2s}
+.toggle-btn.on{background:var(--purple)}
+.toggle-btn::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s}
+.toggle-btn.on::after{transform:translateX(22px)}
+.settings-back{padding:12px 32px;background:transparent;border:1px solid #4c1d95;border-radius:10px;color:var(--text-dim);font-size:13px;cursor:pointer;font-family:inherit;transition:all .2s;margin-top:10px}
+.settings-back:hover{border-color:var(--purple-lt);color:var(--text)}
 
-/* ══════════════════════════════
-   ② 인트로 (오프닝 스토리)
-══════════════════════════════ */
-#intro-screen {
-  flex-direction: column;
-  background: var(--bg-deep); z-index: 9;
-  padding: 40px 60px;
-}
-.intro-lines {
-  max-width: 560px; text-align: center;
-}
-.intro-line {
-  font-size: 18px; line-height: 2;
-  color: var(--text); opacity: 0;
-  transform: translateY(10px);
-  transition: opacity 0.8s ease, transform 0.8s ease;
-}
-.intro-line.visible {
-  opacity: 1; transform: translateY(0);
-}
-.intro-line.highlight {
-  color: var(--gold-lt);
-  font-size: 20px; font-weight: bold;
-  letter-spacing: 1px;
-}
-.intro-skip {
-  position: fixed; bottom: 30px; right: 30px;
-  font-size: 12px; color: var(--text-dim);
-  letter-spacing: 3px; cursor: pointer;
-  opacity: 0; animation: fade-in 1s 2s forwards;
-  background: none; border: none; color: var(--text-dim);
-}
-.intro-skip:hover { color: var(--text); }
-@keyframes fade-in { to { opacity: 1; } }
+/* 게임 화면 */
+#game-screen{flex-direction:column;z-index:6;background:var(--bg-deep);padding:0;align-items:stretch;justify-content:flex-start}
+.game-hud{display:flex;align-items:center;padding:8px 12px;gap:10px;background:#0d0a1a;border-bottom:1px solid #1e1535;flex-shrink:0;z-index:2}
+.hud-map-info{display:flex;flex-direction:column;align-items:flex-start;gap:1px}
+.hud-map-name{font-size:11px;font-weight:bold;color:var(--gold);letter-spacing:2px}
+.hud-difficulty{font-size:9px;color:var(--text-dim);letter-spacing:1px}
+.hud-divider{width:1px;height:28px;background:#2a1f4a;flex-shrink:0}
+.hud-stat{display:flex;flex-direction:column;align-items:center;gap:1px}
+.hud-stat-label{font-size:8px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase}
+.hud-stat-value{font-size:14px;font-weight:bold;color:var(--text)}
+.hud-stat-value.hp{color:var(--red)}
+.hud-stat-value.gold{color:var(--gold-lt)}
+.hud-stat-value.wave{color:var(--purple-lt)}
+.hud-spacer{flex:1}
+.hud-btn{padding:6px 12px;border-radius:6px;border:1px solid #2a1f4a;background:none;color:var(--text-dim);font-size:11px;cursor:pointer;font-family:inherit;transition:all .2s;letter-spacing:1px}
+.hud-btn:hover{border-color:var(--purple);color:var(--text)}
+.hud-btn.danger:hover{border-color:var(--red);color:var(--red)}
+.game-canvas-wrap{flex:1;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+#game-canvas{display:block}
 
-/* ══════════════════════════════
-   ③ 타이틀 화면
-══════════════════════════════ */
-#title-screen {
-  flex-direction: column; gap: 0;
-  z-index: 8;
-}
+/* 웨이브 배너 */
+.wave-banner{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#0d0a1acc;border:1px solid var(--purple);border-radius:12px;padding:16px 32px;text-align:center;display:none;z-index:10;backdrop-filter:blur(8px)}
+.wave-banner.show{display:block;animation:banner-pop .3s ease}
+@keyframes banner-pop{from{transform:translate(-50%,-50%) scale(.8);opacity:0}to{transform:translate(-50%,-50%) scale(1);opacity:1}}
+.wave-banner-title{font-size:11px;color:var(--text-dim);letter-spacing:3px}
+.wave-banner-num{font-size:32px;font-weight:900;color:var(--gold-lt);margin:4px 0}
+.wave-banner-sub{font-size:12px;color:var(--text-dim)}
 
-/* 배경 그라디언트 */
-.title-bg {
-  position: absolute; inset: 0;
-  background:
-    radial-gradient(ellipse at 50% 30%, #2d1b6940 0%, transparent 65%),
-    radial-gradient(ellipse at 20% 80%, #1e3a5f30 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 70%, #3b0764 20 0%, transparent 50%),
-    var(--bg-deep);
-}
+/* 게임 오버레이 */
+.game-overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;background:#0a081299;backdrop-filter:blur(8px);z-index:20}
+.game-overlay.show{display:flex}
+.overlay-icon{font-size:56px}
+.overlay-title{font-size:28px;font-weight:900;letter-spacing:4px}
+.overlay-title.win{color:var(--gold-lt)}
+.overlay-title.lose{color:var(--red)}
+.overlay-desc{font-size:13px;color:var(--text-dim)}
+.overlay-btns{display:flex;gap:12px;margin-top:8px}
+.overlay-btn{padding:12px 24px;border-radius:10px;border:1px solid #4c1d95;background:none;color:var(--text);font-size:13px;cursor:pointer;font-family:inherit;transition:all .2s;letter-spacing:2px}
+.overlay-btn:hover{background:#7c3aed22;border-color:var(--purple-lt)}
+.overlay-btn.primary{background:linear-gradient(135deg,#7c3aed,#a855f7);border:none}
 
-/* 포탈 장식 */
-.title-portal {
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -60%);
-  width: 280px; height: 280px;
-  border-radius: 50%;
-  border: 2px solid #7c3aed44;
-  box-shadow:
-    0 0 60px #7c3aed33,
-    inset 0 0 60px #7c3aed22;
-  animation: portal-rotate 8s linear infinite;
-}
-.title-portal::before {
-  content: '';
-  position: absolute; inset: 10px;
-  border-radius: 50%;
-  border: 1px solid #a855f733;
-  animation: portal-rotate 5s linear infinite reverse;
-}
-.title-portal::after {
-  content: '';
-  position: absolute; inset: 25px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #1a0a3040 0%, #0a081280 100%);
-  border: 1px solid #c084fc22;
-}
-@keyframes portal-rotate {
-  to { transform: rotate(360deg); }
-}
+/* 정령 패널 */
+.spirit-panel{background:#0d0a1a;border-top:1px solid #1e1535;flex-shrink:0;z-index:2;padding:8px 12px}
+.spirit-panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.spirit-panel-title{font-size:10px;color:var(--text-dim);letter-spacing:3px}
+.spirit-panel-gold{font-size:12px;color:var(--gold-lt);display:flex;align-items:center;gap:4px}
+.spirit-list{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.spirit-list::-webkit-scrollbar{height:2px}
+.spirit-list::-webkit-scrollbar-thumb{background:#2a1f4a;border-radius:1px}
+.spirit-item{flex-shrink:0;width:60px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer}
+.spirit-orb{width:52px;height:52px;border-radius:12px;border:2px solid #2a1f4a;display:flex;align-items:center;justify-content:center;font-size:22px;transition:all .2s;position:relative}
+.spirit-item:hover .spirit-orb,.spirit-item.selected .spirit-orb{border-color:var(--purple-lt);box-shadow:0 0 12px #a855f755;transform:translateY(-2px)}
+.spirit-item.selected .spirit-orb{border-color:var(--gold);box-shadow:0 0 16px #f59e0b66}
+.spirit-cost{position:absolute;bottom:-1px;right:-1px;background:#0d0a1a;border:1px solid #2a1f4a;border-radius:4px;padding:1px 4px;font-size:9px;color:var(--gold-lt)}
+.spirit-name{font-size:9px;color:var(--text-dim);letter-spacing:1px;text-align:center}
+.spirit-item.selected .spirit-name{color:var(--gold-lt)}
+.spirit-item.cant-afford .spirit-orb{opacity:.4}
+.spirit-item.cant-afford{cursor:not-allowed}
 
-/* 타이틀 콘텐츠 */
-.title-content {
-  position: relative; z-index: 1;
-  display: flex; flex-direction: column;
-  align-items: center; gap: 8px;
-  margin-top: -40px;
-}
-.title-sub {
-  font-size: 11px; letter-spacing: 8px;
-  color: var(--purple-lt); text-transform: uppercase;
-  opacity: 0; animation: fade-in 0.8s 0.3s forwards;
-}
-.title-main {
-  font-size: clamp(32px, 6vw, 52px);
-  font-weight: 900; letter-spacing: 4px;
-  background: linear-gradient(135deg, #fcd34d, #f59e0b, #fcd34d);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
-  text-shadow: none;
-  filter: drop-shadow(0 0 20px #f59e0b66);
-  opacity: 0; animation: title-appear 1s 0.6s forwards;
-  line-height: 1.1;
-}
-@keyframes title-appear {
-  from { opacity: 0; transform: translateY(-20px) scale(0.9); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
-}
-.title-eng {
-  font-size: clamp(10px, 2vw, 14px);
-  letter-spacing: 12px; color: var(--text-dim);
-  opacity: 0; animation: fade-in 0.8s 1s forwards;
-}
-.title-version {
-  font-size: 10px; letter-spacing: 3px;
-  color: #4c3a7a; margin-top: 4px;
-  opacity: 0; animation: fade-in 0.8s 1.2s forwards;
-}
+/* 토스트 */
+#toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#1e1535;border:1px solid var(--purple);border-radius:8px;padding:10px 20px;font-size:13px;color:var(--text);z-index:100;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+#toast.show{opacity:1}
 
-/* 버튼 영역 */
-.title-buttons {
-  position: relative; z-index: 1;
-  display: flex; flex-direction: column;
-  align-items: center; gap: 12px;
-  margin-top: 48px;
-  opacity: 0; animation: fade-in 0.8s 1.6s forwards;
-}
-
-.btn-primary {
-  width: 220px; padding: 16px 0;
-  background: linear-gradient(135deg, #7c3aed, #a855f7);
-  border: none; border-radius: 12px;
-  color: #fff; font-size: 16px; font-weight: bold;
-  letter-spacing: 4px; cursor: pointer;
-  box-shadow: 0 4px 20px #7c3aed66, 0 0 0 1px #a855f744;
-  transition: all 0.2s;
-  font-family: inherit;
-  position: relative; overflow: hidden;
-}
-.btn-primary::before {
-  content: '';
-  position: absolute; top: 0; left: -100%;
-  width: 100%; height: 100%;
-  background: linear-gradient(90deg, transparent, #ffffff22, transparent);
-  transition: left 0.4s;
-}
-.btn-primary:hover::before { left: 100%; }
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 30px #7c3aed88;
-}
-.btn-primary:active { transform: translateY(0); }
-
-.btn-secondary {
-  width: 220px; padding: 12px 0;
-  background: transparent;
-  border: 1px solid #4c1d95;
-  border-radius: 10px;
-  color: var(--text-dim); font-size: 13px;
-  letter-spacing: 3px; cursor: pointer;
-  transition: all 0.2s;
-  font-family: inherit;
-}
-.btn-secondary:hover {
-  border-color: var(--purple-lt);
-  color: var(--text);
-  background: #7c3aed11;
-}
-
-/* 하단 정보 */
-.title-footer {
-  position: fixed; bottom: 16px;
-  left: 50%; transform: translateX(-50%);
-  font-size: 10px; color: #4c3a7a;
-  letter-spacing: 2px; z-index: 1;
-  opacity: 0; animation: fade-in 0.8s 2s forwards;
-}
-
-/* ══════════════════════════════
-   ④ 레벨 선택 화면
-══════════════════════════════ */
-#level-screen {
-  flex-direction: column; gap: 0;
-  z-index: 7;
-  background: var(--bg-deep);
-  padding: 0;
-}
-
-.level-header {
-  display: flex; align-items: center;
-  padding: 16px 20px; gap: 12px;
-  border-bottom: 1px solid #1e1535;
-  width: 100%;
-}
-.level-back {
-  background: none; border: 1px solid #2a1f4a;
-  border-radius: 8px; color: var(--text-dim);
-  font-size: 12px; padding: 8px 14px;
-  cursor: pointer; font-family: inherit;
-  transition: all 0.2s;
-}
-.level-back:hover { border-color: var(--purple); color: var(--text); }
-.level-title-txt {
-  font-size: 14px; letter-spacing: 4px;
-  color: var(--gold); font-weight: bold;
-  flex: 1; text-align: center;
-}
-.level-gold-display {
-  font-size: 13px; color: var(--gold-lt);
-  display: flex; align-items: center; gap: 6px;
-}
-
-.level-list {
-  flex: 1; width: 100%;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 16px; padding: 20px;
-  overflow-y: auto;
-}
-
-.level-card {
-  width: 100%; max-width: 480px;
-  border-radius: 16px; overflow: hidden;
-  border: 1px solid #2a1f4a;
-  cursor: pointer; transition: all 0.25s;
-  position: relative;
-}
-.level-card:hover {
-  border-color: var(--purple);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 30px #7c3aed44;
-}
-.level-card.locked {
-  opacity: 0.45; cursor: not-allowed;
-}
-.level-card.locked:hover { transform: none; box-shadow: none; }
-
-.level-card-img {
-  width: 100%; height: 110px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 48px; position: relative;
-  overflow: hidden;
-}
-.level-card-img.forest {
-  background: linear-gradient(135deg, #064e3b, #065f46, #047857);
-}
-.level-card-img.bridge {
-  background: linear-gradient(135deg, #1e3a5f, #1e40af, #1d4ed8);
-}
-.level-card-img.fortress {
-  background: linear-gradient(135deg, #3b0764, #4c1d95, #6d28d9);
-}
-.level-card-img::after {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.6));
-}
-
-.level-card-info {
-  padding: 12px 16px;
-  background: #110d1e;
-  display: flex; align-items: center; gap: 12px;
-}
-.level-num {
-  width: 32px; height: 32px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--purple), var(--purple-lt));
-  display: flex; align-items: center; justify-content: center;
-  font-size: 13px; font-weight: bold; color: #fff;
-  flex-shrink: 0;
-}
-.level-info-text { flex: 1; }
-.level-name { font-size: 14px; font-weight: bold; color: var(--text); }
-.level-desc { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
-.level-waves { font-size: 11px; color: var(--purple-lt); }
-.lock-icon { font-size: 18px; }
-
-.level-play-btn {
-  width: 100%; max-width: 480px;
-  padding: 15px; margin: 8px 0;
-  background: linear-gradient(135deg, #7c3aed, #a855f7);
-  border: none; border-radius: 12px;
-  color: #fff; font-size: 15px; font-weight: bold;
-  letter-spacing: 3px; cursor: pointer;
-  font-family: inherit; transition: all 0.2s;
-}
-.level-play-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px #7c3aed66; }
-.level-play-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-
-/* ══════════════════════════════
-   ⑤ 설정 화면
-══════════════════════════════ */
-#settings-screen {
-  flex-direction: column; gap: 20px;
-  z-index: 7;
-  background: var(--bg-deep);
-  padding: 40px;
-}
-.settings-title {
-  font-size: 18px; letter-spacing: 4px;
-  color: var(--gold); font-weight: bold;
-}
-.settings-row {
-  display: flex; align-items: center;
-  justify-content: space-between;
-  width: 100%; max-width: 400px;
-  padding: 14px 0;
-  border-bottom: 1px solid #1e1535;
-  font-size: 14px; color: var(--text);
-}
-.settings-row label { color: var(--text-dim); font-size: 12px; letter-spacing: 2px; }
-.toggle-btn {
-  width: 48px; height: 26px;
-  border-radius: 13px; border: none;
-  background: #2a1f4a; cursor: pointer;
-  position: relative; transition: background 0.2s;
-}
-.toggle-btn.on { background: var(--purple); }
-.toggle-btn::after {
-  content: '';
-  position: absolute; top: 3px; left: 3px;
-  width: 20px; height: 20px;
-  border-radius: 50%; background: #fff;
-  transition: transform 0.2s;
-}
-.toggle-btn.on::after { transform: translateX(22px); }
-.settings-back {
-  padding: 12px 32px;
-  background: transparent; border: 1px solid #4c1d95;
-  border-radius: 10px; color: var(--text-dim);
-  font-size: 13px; cursor: pointer;
-  font-family: inherit; transition: all 0.2s;
-  margin-top: 10px;
-}
-.settings-back:hover { border-color: var(--purple-lt); color: var(--text); }
-
-/* ══════════════════════════════
-   토스트 알림
-══════════════════════════════ */
-#toast {
-  position: fixed; top: 20px; left: 50%;
-  transform: translateX(-50%);
-  background: #1e1535; border: 1px solid var(--purple);
-  border-radius: 8px; padding: 10px 20px;
-  font-size: 13px; color: var(--text);
-  z-index: 100; opacity: 0;
-  transition: opacity 0.3s;
-  pointer-events: none; white-space: nowrap;
-}
-#toast.show { opacity: 1; }
-
-/* 반응형 - 가로형 강제 */
-@media (orientation: portrait) {
-  #rotate-hint {
-    display: flex !important;
-  }
-}
-#rotate-hint {
-  display: none;
-  position: fixed; inset: 0; z-index: 999;
-  background: var(--bg-deep);
-  flex-direction: column; align-items: center; justify-content: center;
-  gap: 16px;
-}
-.rotate-icon {
-  font-size: 48px;
-  animation: rotate-hint-anim 1.5s ease-in-out infinite;
-}
-@keyframes rotate-hint-anim {
-  0%,100% { transform: rotate(0deg); }
-  50%      { transform: rotate(90deg); }
-}
-.rotate-text { font-size: 14px; color: var(--text-dim); letter-spacing: 2px; }
+/* 가로모드 안내 */
+@media(orientation:portrait){#rotate-hint{display:flex!important}}
+#rotate-hint{display:none;position:fixed;inset:0;z-index:999;background:var(--bg-deep);flex-direction:column;align-items:center;justify-content:center;gap:16px}
+.rotate-icon{font-size:48px;animation:rotate-hint-anim 1.5s ease-in-out infinite}
+@keyframes rotate-hint-anim{0%,100%{transform:rotate(0deg)}50%{transform:rotate(90deg)}}
+.rotate-text{font-size:14px;color:var(--text-dim);letter-spacing:2px}
 </style>
 </head>
 <body>
 
-<!-- 가로모드 안내 -->
 <div id="rotate-hint">
   <div class="rotate-icon">📱</div>
   <div class="rotate-text">가로로 돌려주세요</div>
 </div>
 
-<!-- 배경 파티클 캔버스 -->
 <canvas id="bg-canvas"></canvas>
 
-<!-- ① 로딩 화면 -->
+<!-- ① 로딩 -->
 <div id="loading-screen" class="screen active">
   <div class="loading-orb"></div>
   <div class="loading-text">LOADING</div>
-  <div class="loading-bar-wrap">
-    <div class="loading-bar-fill" id="loading-bar"></div>
-  </div>
+  <div class="loading-bar-wrap"><div class="loading-bar-fill" id="loading-bar"></div></div>
 </div>
 
-<!-- ② 인트로 오프닝 -->
+<!-- ② 인트로 -->
 <div id="intro-screen" class="screen">
   <div class="intro-lines" id="intro-lines"></div>
   <button class="intro-skip" onclick="skipIntro()">SKIP ▶</button>
 </div>
 
-<!-- ③ 타이틀 화면 -->
+<!-- ③ 타이틀 -->
 <div id="title-screen" class="screen">
   <div class="title-bg"></div>
   <div class="title-portal"></div>
@@ -507,329 +224,520 @@ html, body {
     <div class="title-version">v2.0 — ALPHA</div>
   </div>
   <div class="title-buttons">
-    <button class="btn-primary" onclick="showLevelSelect()">▶ 게임 시작</button>
+    <button class="btn-primary" onclick="showDifficultySelect()">▶ 게임 시작</button>
     <button class="btn-secondary" onclick="showSettings()">⚙ 설정</button>
   </div>
   <div class="title-footer">© 2025 SPIRIT DEFENSE — ALL RIGHTS RESERVED</div>
 </div>
 
-<!-- ④ 레벨 선택 -->
-<div id="level-screen" class="screen">
-  <div class="level-header">
-    <button class="level-back" onclick="showTitle()">← 뒤로</button>
-    <div class="level-title-txt">스테이지 선택</div>
-    <div class="level-gold-display">💰 <span id="player-gold">0</span></div>
+<!-- ④ 난이도 선택 -->
+<div id="difficulty-screen" class="screen">
+  <div class="diff-header">
+    <button class="diff-back" onclick="showTitle()">← 뒤로</button>
+    <div class="diff-title-txt">난이도 선택</div>
+    <div class="diff-gold-display">💰 <span id="player-gold">0</span></div>
   </div>
-  <div class="level-list">
-
-    <div class="level-card" id="level-1" onclick="selectLevel(1)">
-      <div class="level-card-img forest">🌲</div>
-      <div class="level-card-info">
-        <div class="level-num">1</div>
-        <div class="level-info-text">
-          <div class="level-name">정령의 숲</div>
-          <div class="level-desc">포탈에서 나온 악마들이 3갈래로 밀려온다</div>
-          <div class="level-waves">20 웨이브 · 보스 2회</div>
+  <div class="diff-content">
+    <div class="diff-subtitle">난이도를 선택하면 3개의 맵을 순서대로 플레이합니다</div>
+    <div class="diff-flow">
+      <div class="diff-flow-map">🌲 정령의 숲</div>
+      <div class="diff-flow-arrow">→</div>
+      <div class="diff-flow-map">🌉 협곡의 다리</div>
+      <div class="diff-flow-arrow">→</div>
+      <div class="diff-flow-map">🏰 태초의 요새</div>
+    </div>
+    <div class="diff-cards">
+      <div class="diff-card easy" id="diff-easy" onclick="selectDifficulty('easy')">
+        <div class="diff-card-inner">
+          <div class="diff-icon">🌿</div>
+          <div class="diff-info">
+            <div class="diff-name">쉬움</div>
+            <div class="diff-desc">적의 속도가 느리고 체력이 낮습니다.<br>정령 디펜스를 처음 시작하는 분께 추천!</div>
+            <div class="diff-wave-info">
+              <span class="diff-wave-badge">총 60 웨이브</span>
+              <span class="diff-wave-badge">보스 6회</span>
+            </div>
+          </div>
+          <div class="diff-check" id="check-easy"></div>
+        </div>
+      </div>
+      <div class="diff-card normal" id="diff-normal" onclick="selectDifficulty('normal')">
+        <div class="diff-card-inner">
+          <div class="diff-icon">⚔️</div>
+          <div class="diff-info">
+            <div class="diff-name">중간</div>
+            <div class="diff-desc">균형 잡힌 도전. 전략이 중요해집니다.<br>정령 결합과 배치를 적극 활용하세요!</div>
+            <div class="diff-wave-info">
+              <span class="diff-wave-badge">총 60 웨이브</span>
+              <span class="diff-wave-badge">보스 6회</span>
+            </div>
+          </div>
+          <div class="diff-check" id="check-normal"></div>
+        </div>
+      </div>
+      <div class="diff-card hard" id="diff-hard" onclick="selectDifficulty('hard')">
+        <div class="diff-card-inner">
+          <div class="diff-icon">💀</div>
+          <div class="diff-info">
+            <div class="diff-name">어려움</div>
+            <div class="diff-desc">빠르고 강력한 적들이 밀려옵니다.<br>완벽한 전략 없이는 살아남을 수 없습니다!</div>
+            <div class="diff-wave-info">
+              <span class="diff-wave-badge">총 60 웨이브</span>
+              <span class="diff-wave-badge">보스 6회</span>
+            </div>
+          </div>
+          <div class="diff-check" id="check-hard"></div>
         </div>
       </div>
     </div>
-
-    <div class="level-card locked" id="level-2">
-      <div class="level-card-img bridge">🌉</div>
-      <div class="level-card-info">
-        <div class="level-num">2</div>
-        <div class="level-info-text">
-          <div class="level-name">협곡의 다리</div>
-          <div class="level-desc">좁은 다리 위아래로 악마가 밀려온다</div>
-          <div class="level-waves">20 웨이브 · 보스 2회</div>
-        </div>
-        <div class="lock-icon">🔒</div>
-      </div>
-    </div>
-
-    <div class="level-card locked" id="level-3">
-      <div class="level-card-img fortress">🏰</div>
-      <div class="level-card-info">
-        <div class="level-num">3</div>
-        <div class="level-info-text">
-          <div class="level-name">태초의 요새</div>
-          <div class="level-desc">위에서 무작위로 악마들이 쏟아진다</div>
-          <div class="level-waves">20 웨이브 · 보스 2회</div>
-        </div>
-        <div class="lock-icon">🔒</div>
-      </div>
-    </div>
-
-    <button class="level-play-btn" id="play-btn" disabled onclick="startGame()">
-      스테이지를 선택하세요
-    </button>
+    <button class="diff-start-btn" id="diff-start-btn" disabled onclick="startGame()">난이도를 선택하세요</button>
   </div>
 </div>
 
-<!-- ⑤ 설정 화면 -->
+<!-- ⑤ 설정 -->
 <div id="settings-screen" class="screen">
   <div class="settings-title">⚙ 설정</div>
-  <div class="settings-row">
-    <label>배경음악</label>
-    <button class="toggle-btn on" id="bgm-toggle" onclick="toggleSetting('bgm')"></button>
-  </div>
-  <div class="settings-row">
-    <label>효과음</label>
-    <button class="toggle-btn on" id="sfx-toggle" onclick="toggleSetting('sfx')"></button>
-  </div>
-  <div class="settings-row">
-    <label>진동</label>
-    <button class="toggle-btn on" id="vib-toggle" onclick="toggleSetting('vib')"></button>
-  </div>
-  <div class="settings-row">
-    <label>인트로 영상</label>
-    <button class="toggle-btn on" id="intro-toggle" onclick="toggleSetting('intro')"></button>
-  </div>
+  <div class="settings-row"><label>배경음악</label><button class="toggle-btn on" id="bgm-toggle" onclick="toggleSetting('bgm')"></button></div>
+  <div class="settings-row"><label>효과음</label><button class="toggle-btn on" id="sfx-toggle" onclick="toggleSetting('sfx')"></button></div>
+  <div class="settings-row"><label>진동</label><button class="toggle-btn on" id="vib-toggle" onclick="toggleSetting('vib')"></button></div>
+  <div class="settings-row"><label>인트로 영상</label><button class="toggle-btn on" id="intro-toggle" onclick="toggleSetting('intro')"></button></div>
   <button class="settings-back" onclick="showTitle()">← 타이틀로</button>
 </div>
 
-<!-- 토스트 -->
+<!-- ⑥ 게임 화면 -->
+<div id="game-screen" class="screen">
+  <div class="game-hud">
+    <div class="hud-map-info">
+      <div class="hud-map-name" id="hud-map-name">정령의 숲</div>
+      <div class="hud-difficulty" id="hud-difficulty">쉬움</div>
+    </div>
+    <div class="hud-divider"></div>
+    <div class="hud-stat">
+      <div class="hud-stat-label">WAVE</div>
+      <div class="hud-stat-value wave" id="hud-wave">1/60</div>
+    </div>
+    <div class="hud-divider"></div>
+    <div class="hud-stat">
+      <div class="hud-stat-label">HP</div>
+      <div class="hud-stat-value hp" id="hud-hp">20</div>
+    </div>
+    <div class="hud-divider"></div>
+    <div class="hud-stat">
+      <div class="hud-stat-label">GOLD</div>
+      <div class="hud-stat-value gold" id="hud-gold">100</div>
+    </div>
+    <div class="hud-spacer"></div>
+    <button class="hud-btn" id="wave-btn" onclick="startWave()">▶ 시작</button>
+    <button class="hud-btn danger" onclick="confirmQuit()">✕ 종료</button>
+  </div>
+  <div class="game-canvas-wrap" id="game-canvas-wrap">
+    <canvas id="game-canvas"></canvas>
+    <div class="wave-banner" id="wave-banner">
+      <div class="wave-banner-title">WAVE</div>
+      <div class="wave-banner-num" id="wave-banner-num">1</div>
+      <div class="wave-banner-sub" id="wave-banner-sub">준비하세요!</div>
+    </div>
+    <div class="game-overlay" id="game-overlay">
+      <div class="overlay-icon" id="overlay-icon">💀</div>
+      <div class="overlay-title" id="overlay-title">GAME OVER</div>
+      <div class="overlay-desc" id="overlay-desc"></div>
+      <div class="overlay-btns">
+        <button class="overlay-btn" onclick="showTitle()">타이틀로</button>
+        <button class="overlay-btn primary" onclick="retryGame()">다시 시작</button>
+      </div>
+    </div>
+  </div>
+  <div class="spirit-panel">
+    <div class="spirit-panel-header">
+      <div class="spirit-panel-title">정령 소환</div>
+      <div class="spirit-panel-gold">💰 <span id="panel-gold">100</span></div>
+    </div>
+    <div class="spirit-list" id="spirit-list"></div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
-// ══════════════════════════════════════════
-//  설정 & 저장
-// ══════════════════════════════════════════
+// ─── 저장 ───
 const SAVE_KEY = 'spirit-defense-save';
-
-const defaultSave = {
-  gold: 0,
-  clearedLevels: [],
-  settings: { bgm: true, sfx: true, vib: true, intro: true },
-};
-
+const defaultSave = { gold: 0, settings: { bgm:true, sfx:true, vib:true, intro:true } };
 let saveData = (() => {
-  try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || { ...defaultSave }; }
-  catch { return { ...defaultSave }; }
+  try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {...defaultSave}; }
+  catch { return {...defaultSave}; }
 })();
+function writeSave(){ localStorage.setItem(SAVE_KEY, JSON.stringify(saveData)); }
 
-function writeSave() {
-  localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
-}
+// ─── 화면 전환 ───
+function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+function showTitle(){ showScreen('title-screen'); }
+function showSettings(){ showScreen('settings-screen'); updateSettingsUI(); }
+function showDifficultySelect(){ showScreen('difficulty-screen'); updateDifficultyUI(); }
 
-// ══════════════════════════════════════════
-//  화면 전환
-// ══════════════════════════════════════════
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-}
-
-function showTitle()       { showScreen('title-screen'); }
-function showSettings()    { showScreen('settings-screen'); updateSettingsUI(); }
-function showLevelSelect() { showScreen('level-screen'); updateLevelUI(); }
-
-// ══════════════════════════════════════════
-//  레벨 선택
-// ══════════════════════════════════════════
-let selectedLevel = null;
-
-function updateLevelUI() {
+// ─── 난이도 ───
+let selectedDifficulty = null;
+const DIFFICULTY_CONFIG = {
+  easy:   { name:'쉬움',   enemyHpMult:0.7,  enemySpeedMult:0.7,  startGold:150 },
+  normal: { name:'중간',   enemyHpMult:1.0,  enemySpeedMult:1.0,  startGold:100 },
+  hard:   { name:'어려움', enemyHpMult:1.5,  enemySpeedMult:1.4,  startGold:80  },
+};
+function updateDifficultyUI(){
   document.getElementById('player-gold').textContent = saveData.gold;
-
-  // 클리어한 레벨 기준 잠금 해제
-  [1, 2, 3].forEach(n => {
-    const card = document.getElementById(`level-${n}`);
-    if (!card) return;
-    const isUnlocked = n === 1 || saveData.clearedLevels.includes(n - 1);
-    card.classList.toggle('locked', !isUnlocked);
-    if (isUnlocked) card.onclick = () => selectLevel(n);
-    else card.onclick = () => showToast('이전 스테이지를 클리어해야 해요!');
+  ['easy','normal','hard'].forEach(d=>{
+    document.getElementById('diff-'+d).classList.remove('selected');
+    document.getElementById('check-'+d).textContent = '';
   });
-
-  // 선택 초기화
-  selectedLevel = null;
-  document.getElementById('play-btn').disabled = true;
-  document.getElementById('play-btn').textContent = '스테이지를 선택하세요';
+  if(selectedDifficulty){
+    document.getElementById('diff-'+selectedDifficulty).classList.add('selected');
+    document.getElementById('check-'+selectedDifficulty).textContent = '✓';
+  }
 }
-
-function selectLevel(n) {
-  const card = document.getElementById(`level-${n}`);
-  if (card.classList.contains('locked')) return;
-
-  // 선택 표시
-  document.querySelectorAll('.level-card').forEach(c => c.style.borderColor = '');
-  card.style.borderColor = 'var(--purple-lt)';
-  card.style.boxShadow   = '0 0 20px #a855f744';
-
-  selectedLevel = n;
-  const names = ['', '정령의 숲', '협곡의 다리', '태초의 요새'];
-  const btn = document.getElementById('play-btn');
+function selectDifficulty(d){
+  selectedDifficulty = d;
+  updateDifficultyUI();
+  const cfg = DIFFICULTY_CONFIG[d];
+  const btn = document.getElementById('diff-start-btn');
   btn.disabled = false;
-  btn.textContent = `▶ ${names[n]} 시작`;
+  btn.textContent = '▶ '+cfg.name+'으로 시작';
 }
 
-function startGame() {
-  if (!selectedLevel) return;
-  showToast(`${['', '정령의 숲', '협곡의 다리', '태초의 요새'][selectedLevel]} — 준비 중...`);
-  // TODO: 2단계에서 게임 화면 연결
-}
-
-// ══════════════════════════════════════════
-//  설정
-// ══════════════════════════════════════════
-function toggleSetting(key) {
-  saveData.settings[key] = !saveData.settings[key];
-  writeSave();
-  updateSettingsUI();
-}
-function updateSettingsUI() {
-  ['bgm','sfx','vib','intro'].forEach(key => {
-    const btn = document.getElementById(`${key}-toggle`);
-    btn.classList.toggle('on', saveData.settings[key]);
+// ─── 설정 ───
+function toggleSetting(key){ saveData.settings[key]=!saveData.settings[key]; writeSave(); updateSettingsUI(); }
+function updateSettingsUI(){
+  ['bgm','sfx','vib','intro'].forEach(key=>{
+    const btn = document.getElementById(key+'-toggle');
+    if(btn) btn.classList.toggle('on', saveData.settings[key]);
   });
 }
 
-// ══════════════════════════════════════════
-//  인트로 오프닝 텍스트
-// ══════════════════════════════════════════
+// ─── 인트로 ───
 const INTRO_LINES = [
-  { text: '지옥의 봉인이 무너졌다.', highlight: false },
-  { text: '여섯 군주의 악마들이 정령의 세계를 넘어', highlight: false },
-  { text: '인간 세계로 침공하기 시작했다.', highlight: false },
-  { text: '', highlight: false },
-  { text: '정령왕은 이미 사라진 지 오래.', highlight: false },
-  { text: '정령 장로회는 마지막 선택을 내렸다.', highlight: false },
-  { text: '', highlight: false },
-  { text: '금지되었던 원소 결합을 허용하고,', highlight: false },
-  { text: '한 명의 소환자에게 모든 힘을 맡긴다.', highlight: false },
-  { text: '', highlight: false },
-  { text: '정령을 소환하고, 결합하라.', highlight: true },
-  { text: '그리고 이 세계를 지켜라.', highlight: true },
+  {text:'지옥의 봉인이 무너졌다.',highlight:false},
+  {text:'여섯 군주의 악마들이 정령의 세계를 넘어',highlight:false},
+  {text:'인간 세계로 침공하기 시작했다.',highlight:false},
+  {text:'',highlight:false},
+  {text:'정령왕은 이미 사라진 지 오래.',highlight:false},
+  {text:'정령 장로회는 마지막 선택을 내렸다.',highlight:false},
+  {text:'',highlight:false},
+  {text:'금지되었던 원소 결합을 허용하고,',highlight:false},
+  {text:'한 명의 소환자에게 모든 힘을 맡긴다.',highlight:false},
+  {text:'',highlight:false},
+  {text:'정령을 소환하고, 결합하라.',highlight:true},
+  {text:'그리고 이 세계를 지켜라.',highlight:true},
 ];
-
-let introIndex = 0;
-let introTimer = null;
-
-function showIntro() {
+let introIndex=0, introTimer=null;
+function showIntro(){
   showScreen('intro-screen');
-  const container = document.getElementById('intro-lines');
-  container.innerHTML = '';
-  introIndex = 0;
-
-  INTRO_LINES.forEach(l => {
-    const div = document.createElement('div');
-    div.className = 'intro-line' + (l.highlight ? ' highlight' : '');
-    div.textContent = l.text || '\u00A0';
-    container.appendChild(div);
-  });
-
-  function revealNext() {
-    const lines = container.querySelectorAll('.intro-line');
-    if (introIndex < lines.length) {
-      lines[introIndex].classList.add('visible');
-      introIndex++;
-      introTimer = setTimeout(revealNext, introIndex <= 3 ? 900 : 700);
-    } else {
-      setTimeout(showTitle, 1800);
-    }
-  }
-  revealNext();
+  const c = document.getElementById('intro-lines'); c.innerHTML=''; introIndex=0;
+  INTRO_LINES.forEach(l=>{ const d=document.createElement('div'); d.className='intro-line'+(l.highlight?' highlight':''); d.textContent=l.text||'\u00A0'; c.appendChild(d); });
+  function rev(){ const lines=c.querySelectorAll('.intro-line'); if(introIndex<lines.length){ lines[introIndex].classList.add('visible'); introIndex++; introTimer=setTimeout(rev,introIndex<=3?900:700); } else setTimeout(showTitle,1800); }
+  rev();
 }
+function skipIntro(){ clearTimeout(introTimer); showTitle(); }
 
-function skipIntro() {
-  clearTimeout(introTimer);
-  showTitle();
+// ─── 토스트 ───
+let toastTimer=null;
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2500); }
+
+// ─── 배경 파티클 ───
+const bgCanvas=document.getElementById('bg-canvas'), bgCtx=bgCanvas.getContext('2d');
+let particles=[];
+function resizeBgCanvas(){ bgCanvas.width=window.innerWidth; bgCanvas.height=window.innerHeight; }
+function initParticles(){
+  particles=[];
+  const count=Math.floor((bgCanvas.width*bgCanvas.height)/8000);
+  for(let i=0;i<count;i++) particles.push({x:Math.random()*bgCanvas.width,y:Math.random()*bgCanvas.height,r:Math.random()*1.5+0.3,vx:(Math.random()-.5)*.2,vy:-Math.random()*.3-.1,alpha:Math.random()*.6+.2,color:Math.random()>.5?'#a855f7':'#7c3aed'});
 }
-
-// ══════════════════════════════════════════
-//  토스트
-// ══════════════════════════════════════════
-let toastTimer = null;
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
-}
-
-// ══════════════════════════════════════════
-//  배경 파티클
-// ══════════════════════════════════════════
-const bgCanvas = document.getElementById('bg-canvas');
-const bgCtx    = bgCanvas.getContext('2d');
-let particles  = [];
-
-function resizeBgCanvas() {
-  bgCanvas.width  = window.innerWidth;
-  bgCanvas.height = window.innerHeight;
-}
-
-function initParticles() {
-  particles = [];
-  const count = Math.floor((bgCanvas.width * bgCanvas.height) / 8000);
-  for (let i = 0; i < count; i++) {
-    particles.push({
-      x:    Math.random() * bgCanvas.width,
-      y:    Math.random() * bgCanvas.height,
-      r:    Math.random() * 1.5 + 0.3,
-      vx:   (Math.random() - 0.5) * 0.2,
-      vy:   -Math.random() * 0.3 - 0.1,
-      alpha: Math.random() * 0.6 + 0.2,
-      color: Math.random() > 0.5 ? '#a855f7' : '#7c3aed',
-    });
-  }
-}
-
-function animateBg() {
-  bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
-  particles.forEach(p => {
-    p.x += p.vx; p.y += p.vy;
-    if (p.y < -5) { p.y = bgCanvas.height + 5; p.x = Math.random() * bgCanvas.width; }
-    bgCtx.fillStyle = p.color + Math.floor(p.alpha * 255).toString(16).padStart(2,'0');
-    bgCtx.beginPath();
-    bgCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-    bgCtx.fill();
-  });
+function animateBg(){
+  bgCtx.clearRect(0,0,bgCanvas.width,bgCanvas.height);
+  particles.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; if(p.y<-5){p.y=bgCanvas.height+5;p.x=Math.random()*bgCanvas.width;} bgCtx.fillStyle=p.color+Math.floor(p.alpha*255).toString(16).padStart(2,'0'); bgCtx.beginPath(); bgCtx.arc(p.x,p.y,p.r,0,Math.PI*2); bgCtx.fill(); });
   requestAnimationFrame(animateBg);
 }
 
-// ══════════════════════════════════════════
-//  로딩
-// ══════════════════════════════════════════
-function runLoading() {
-  const bar = document.getElementById('loading-bar');
-  let progress = 0;
-  const interval = setInterval(() => {
-    progress += Math.random() * 15 + 5;
-    if (progress >= 100) {
-      progress = 100;
-      bar.style.width = '100%';
-      clearInterval(interval);
-      setTimeout(() => {
-        // 인트로 설정 확인
-        if (saveData.settings.intro) showIntro();
-        else showTitle();
-      }, 400);
-    } else {
-      bar.style.width = progress + '%';
-    }
-  }, 80);
+// ─── 정령 데이터 ───
+const SPIRITS = [
+  {id:'fire',  name:'화염', emoji:'🔥', cost:50,  color:'#f97316'},
+  {id:'water', name:'수류', emoji:'💧', cost:50,  color:'#3b82f6'},
+  {id:'wind',  name:'바람', emoji:'🌀', cost:60,  color:'#22d3ee'},
+  {id:'earth', name:'대지', emoji:'🪨', cost:40,  color:'#a78bfa'},
+  {id:'light', name:'빛',   emoji:'✨', cost:80,  color:'#fcd34d'},
+];
+
+// ─── 게임 상태 ───
+const MAP_NAMES = {forest:'정령의 숲', bridge:'협곡의 다리', fortress:'태초의 요새'};
+let G = {};
+function initGameState(diff){
+  G = {
+    difficulty:diff, diffConfig:DIFFICULTY_CONFIG[diff],
+    currentMap:'forest', wave:1, totalWave:60,
+    hp:20, gold:DIFFICULTY_CONFIG[diff].startGold,
+    selectedSpirit:null, placedSpirits:[],
+    waveActive:false,
+  };
 }
 
-// ══════════════════════════════════════════
-//  PWA
-// ══════════════════════════════════════════
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
+// ─── 캔버스 크기 ───
+function getCanvasSize(){
+  const wrap=document.getElementById('game-canvas-wrap');
+  let w=wrap.clientWidth, h=w*(9/16);
+  if(h>wrap.clientHeight){ h=wrap.clientHeight; w=h*(16/9); }
+  return {w:Math.floor(w),h:Math.floor(h)};
+}
+
+// ─── 맵 레이아웃 ───
+function getMapLayout(mapKey,cw,ch){
+  if(mapKey==='forest')   return getForestLayout(cw,ch);
+  if(mapKey==='bridge')   return getBridgeLayout(cw,ch);
+  if(mapKey==='fortress') return getFortressLayout(cw,ch);
+}
+
+function getForestLayout(cw,ch){
+  const ROWS=3, pathH=ch/ROWS;
+  const paths=[];
+  for(let r=0;r<ROWS;r++){
+    const cy=pathH*r+pathH/2;
+    paths.push([{x:cw,y:cy},{x:cw*.08,y:cy}]);
+  }
+  const slots=[];
+  const zoneY=[pathH*.5, pathH*1.0, pathH*2.0, pathH*2.5];
+  const COLS=5, slotW=cw*.76/COLS, startX=cw*.12;
+  zoneY.forEach((zy,zi)=>{
+    for(let c=0;c<COLS;c++){
+      slots.push({id:zi*COLS+c, x:startX+slotW*c+slotW/2, y:zy, size:Math.min(slotW*.7,pathH*.36)});
+    }
+  });
+  return {paths,slots,bgColor:'#071a10',pathColor:'#0f3320',mapKey:'forest'};
+}
+
+function getBridgeLayout(cw,ch){
+  const topY=ch*.28, botY=ch*.72;
+  const paths=[
+    [{x:cw,y:topY},{x:0,y:topY}],
+    [{x:0,y:botY},{x:cw,y:botY}],
+  ];
+  const slots=[], COLS=10, slotW=cw*.88/COLS, startX=cw*.06;
+  for(let c=0;c<COLS;c++) slots.push({id:c,       x:startX+slotW*c+slotW/2, y:topY-ch*.13, size:Math.min(slotW*.7,ch*.09)});
+  for(let c=0;c<COLS;c++) slots.push({id:COLS+c,  x:startX+slotW*c+slotW/2, y:botY+ch*.13, size:Math.min(slotW*.7,ch*.09)});
+  return {paths,slots,bgColor:'#060e1a',pathColor:'#0f2035',mapKey:'bridge'};
+}
+
+function getFortressLayout(cw,ch){
+  const paths=[];
+  for(let i=0;i<5;i++) paths.push([{x:cw*(.1+.2*i),y:0},{x:cw*(.1+.2*i),y:ch}]);
+  const slots=[], layers=[{count:12,y:ch*.75},{count:5,y:ch*.50},{count:3,y:ch*.28}];
+  let sid=0;
+  layers.forEach(layer=>{
+    const slotW=cw*.86/layer.count, startX=cw*.07;
+    for(let c=0;c<layer.count;c++) slots.push({id:sid++, x:startX+slotW*c+slotW/2, y:layer.y, size:Math.min(slotW*.7,ch*.09)});
+  });
+  return {paths,slots,bgColor:'#100818',pathColor:'#1e0f30',mapKey:'fortress'};
+}
+
+// ─── 렌더링 ───
+let gameCanvas, gameCtx, currentLayout;
+function setupCanvas(){
+  gameCanvas=document.getElementById('game-canvas');
+  gameCtx=gameCanvas.getContext('2d');
+  const {w,h}=getCanvasSize();
+  gameCanvas.width=w; gameCanvas.height=h;
+  gameCanvas.style.width=w+'px'; gameCanvas.style.height=h+'px';
+  return {w,h};
+}
+
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath(); ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r); ctx.lineTo(x+w,y+h-r);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h); ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r); ctx.lineTo(x,y+r);
+  ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+}
+
+function drawMap(layout){
+  const ctx=gameCtx, cw=gameCanvas.width, ch=gameCanvas.height;
+  ctx.fillStyle=layout.bgColor; ctx.fillRect(0,0,cw,ch);
+
+  // 경로
+  layout.paths.forEach(path=>{
+    if(path.length<2) return;
+    const thick = layout.mapKey==='bridge' ? ch*.13 : cw*.06;
+    ctx.save();
+    ctx.strokeStyle=layout.pathColor; ctx.lineWidth=thick; ctx.lineCap='round'; ctx.lineJoin='round';
+    ctx.shadowColor=layout.pathColor; ctx.shadowBlur=16;
+    ctx.beginPath(); ctx.moveTo(path[0].x,path[0].y);
+    for(let i=1;i<path.length;i++) ctx.lineTo(path[i].x,path[i].y);
+    ctx.stroke();
+    // 중앙 하이라이트
+    ctx.shadowBlur=0; ctx.globalAlpha=.35; ctx.lineWidth=thick*.25;
+    ctx.strokeStyle='#ffffff'; ctx.stroke();
+    ctx.restore();
+  });
+
+  // 배치 슬롯
+  layout.slots.forEach(slot=>{
+    const placed=G.placedSpirits.find(p=>p.slotId===slot.id);
+    const hoverable=G.selectedSpirit&&!placed;
+    const sz=slot.size;
+    ctx.save(); ctx.translate(slot.x,slot.y);
+    if(placed){
+      const spirit=SPIRITS.find(s=>s.id===placed.spiritId);
+      ctx.fillStyle=spirit?spirit.color+'44':'#7c3aed44';
+      ctx.strokeStyle=spirit?spirit.color:'#7c3aed';
+      ctx.lineWidth=2; ctx.shadowColor=spirit?spirit.color:'#7c3aed'; ctx.shadowBlur=12;
+      roundRect(ctx,-sz/2,-sz/2,sz,sz,sz*.2); ctx.fill(); ctx.stroke();
+      ctx.shadowBlur=0; ctx.font=`${sz*.55}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle='#fff';
+      ctx.fillText(spirit?spirit.emoji:'?',0,0);
+    } else {
+      ctx.fillStyle=hoverable?'#7c3aed1a':'#ffffff08';
+      ctx.strokeStyle=hoverable?'#a855f766':'#ffffff18';
+      ctx.lineWidth=1.5;
+      if(hoverable){ctx.shadowColor='#a855f7';ctx.shadowBlur=6;}
+      roundRect(ctx,-sz/2,-sz/2,sz,sz,sz*.2); ctx.fill();
+      ctx.setLineDash([3,3]); ctx.stroke(); ctx.setLineDash([]);
+      if(hoverable){ ctx.fillStyle='#a855f799'; ctx.font=`${sz*.5}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('+',0,0); }
+    }
+    ctx.restore();
   });
 }
 
-// ══════════════════════════════════════════
-//  초기화
-// ══════════════════════════════════════════
-window.addEventListener('resize', () => { resizeBgCanvas(); initParticles(); });
-resizeBgCanvas();
-initParticles();
-animateBg();
-runLoading();
+// ─── 정령 패널 ───
+function renderSpiritPanel(){
+  const list=document.getElementById('spirit-list'); list.innerHTML='';
+  SPIRITS.forEach(spirit=>{
+    const canAfford=G.gold>=spirit.cost;
+    const item=document.createElement('div');
+    item.className='spirit-item'+(G.selectedSpirit===spirit.id?' selected':'')+(canAfford?'':' cant-afford');
+    const borderCol=G.selectedSpirit===spirit.id?spirit.color:'';
+    item.innerHTML=`<div class="spirit-orb" style="background:${spirit.color}22;border-color:${borderCol}">${spirit.emoji}<span class="spirit-cost">💰${spirit.cost}</span></div><div class="spirit-name">${spirit.name}</div>`;
+    item.onclick=()=>{
+      if(!canAfford){showToast('골드가 부족해요!');return;}
+      G.selectedSpirit=G.selectedSpirit===spirit.id?null:spirit.id;
+      renderSpiritPanel(); drawMap(currentLayout);
+    };
+    list.appendChild(item);
+  });
+  document.getElementById('panel-gold').textContent=G.gold;
+}
+
+// ─── 캔버스 탭 → 배치 ───
+function onCanvasTap(e){
+  if(!G.selectedSpirit) return;
+  const rect=gameCanvas.getBoundingClientRect();
+  const cx=(e.clientX-rect.left)*(gameCanvas.width/rect.width);
+  const cy=(e.clientY-rect.top)*(gameCanvas.height/rect.height);
+  let nearest=null, minDist=Infinity;
+  currentLayout.slots.forEach(slot=>{
+    const d=Math.hypot(slot.x-cx,slot.y-cy);
+    if(d<minDist&&d<slot.size*1.4){minDist=d;nearest=slot;}
+  });
+  if(!nearest){showToast('배치 가능한 칸을 탭해주세요!');return;}
+  if(G.placedSpirits.find(p=>p.slotId===nearest.id)){showToast('이미 배치된 칸입니다!');return;}
+  const spirit=SPIRITS.find(s=>s.id===G.selectedSpirit);
+  if(G.gold<spirit.cost){showToast('골드가 부족해요!');return;}
+  G.gold-=spirit.cost;
+  G.placedSpirits.push({slotId:nearest.id,spiritId:G.selectedSpirit,x:nearest.x,y:nearest.y});
+  G.selectedSpirit=null;
+  updateHUD(); renderSpiritPanel(); drawMap(currentLayout);
+  showToast(spirit.name+' 정령 배치 완료!');
+}
+
+// ─── HUD ───
+function updateHUD(){
+  document.getElementById('hud-wave').textContent=G.wave+'/60';
+  document.getElementById('hud-hp').textContent=G.hp;
+  document.getElementById('hud-gold').textContent=G.gold;
+  document.getElementById('panel-gold').textContent=G.gold;
+  document.getElementById('hud-map-name').textContent=MAP_NAMES[G.currentMap];
+  document.getElementById('hud-difficulty').textContent=G.diffConfig.name;
+}
+
+// ─── 웨이브 ───
+function startWave(){
+  if(G.waveActive) return;
+  G.waveActive=true;
+  const btn=document.getElementById('wave-btn');
+  btn.disabled=true; btn.textContent='진행중...';
+  if(G.wave===21)      { G.currentMap='bridge';   showMapTransition('협곡의 다리'); }
+  else if(G.wave===41) { G.currentMap='fortress';  showMapTransition('태초의 요새'); }
+  else {
+    const banner=document.getElementById('wave-banner');
+    document.getElementById('wave-banner-num').textContent=G.wave;
+    document.getElementById('wave-banner-sub').textContent=G.wave%10===0?'⚠ 보스 웨이브!':'준비하세요!';
+    banner.classList.add('show'); setTimeout(()=>banner.classList.remove('show'),2000);
+  }
+  setTimeout(()=>completeWave(), G.wave===21||G.wave===41?3000:3000);
+}
+function completeWave(){
+  G.waveActive=false;
+  const reward=30+G.wave*2; G.gold+=reward;
+  showToast('웨이브 '+G.wave+' 완료! +'+reward+' 💰');
+  if(G.wave>=60){ showGameClear(); return; }
+  G.wave++; updateHUD(); renderSpiritPanel();
+  const btn=document.getElementById('wave-btn');
+  btn.disabled=false; btn.textContent='▶ '+G.wave+'웨이브';
+}
+function showMapTransition(name){
+  const banner=document.getElementById('wave-banner');
+  document.getElementById('wave-banner-num').textContent='🗺';
+  document.getElementById('wave-banner-sub').textContent='다음 맵: '+name;
+  banner.classList.add('show');
+  setTimeout(()=>{ banner.classList.remove('show'); G.placedSpirits=[]; refreshMap(); showToast(name+'으로 이동했습니다!'); }, 2500);
+}
+function refreshMap(){ const {w,h}=setupCanvas(); currentLayout=getMapLayout(G.currentMap,w,h); drawMap(currentLayout); updateHUD(); }
+
+// ─── 게임 오버 / 클리어 ───
+function showGameOver(){
+  const o=document.getElementById('game-overlay');
+  document.getElementById('overlay-icon').textContent='💀';
+  document.getElementById('overlay-title').textContent='GAME OVER';
+  document.getElementById('overlay-title').className='overlay-title lose';
+  document.getElementById('overlay-desc').textContent='웨이브 '+G.wave+'에서 방어에 실패했습니다';
+  o.classList.add('show');
+}
+function showGameClear(){
+  const o=document.getElementById('game-overlay');
+  document.getElementById('overlay-icon').textContent='🏆';
+  document.getElementById('overlay-title').textContent='CLEAR!';
+  document.getElementById('overlay-title').className='overlay-title win';
+  document.getElementById('overlay-desc').textContent=G.diffConfig.name+' 난이도 60웨이브 완주! 수고하셨습니다!';
+  o.classList.add('show');
+}
+function retryGame(){ document.getElementById('game-overlay').classList.remove('show'); startGame(); }
+function confirmQuit(){ if(confirm('게임을 종료하고 타이틀로 돌아갈까요?')) showTitle(); }
+
+// ─── 게임 시작 ───
+function startGame(){
+  if(!selectedDifficulty) return;
+  initGameState(selectedDifficulty);
+  showScreen('game-screen');
+  setTimeout(()=>{
+    const {w,h}=setupCanvas();
+    currentLayout=getMapLayout(G.currentMap,w,h);
+    drawMap(currentLayout); updateHUD(); renderSpiritPanel();
+    gameCanvas.addEventListener('click',onCanvasTap);
+    gameCanvas.addEventListener('touchend',e=>{ e.preventDefault(); const t=e.changedTouches[0]; onCanvasTap({clientX:t.clientX,clientY:t.clientY}); },{passive:false});
+    const banner=document.getElementById('wave-banner');
+    document.getElementById('wave-banner-num').textContent='1';
+    document.getElementById('wave-banner-sub').textContent='정령을 배치하고 시작하세요!';
+    banner.classList.add('show'); setTimeout(()=>banner.classList.remove('show'),2500);
+  },100);
+}
+
+// ─── 로딩 ───
+function runLoading(){
+  const bar=document.getElementById('loading-bar'); let progress=0;
+  const iv=setInterval(()=>{
+    progress+=Math.random()*15+5;
+    if(progress>=100){ progress=100; bar.style.width='100%'; clearInterval(iv); setTimeout(()=>{ if(saveData.settings.intro)showIntro(); else showTitle(); },400); }
+    else bar.style.width=progress+'%';
+  },80);
+}
+
+// ─── PWA ───
+if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+
+// ─── 초기화 ───
+window.addEventListener('resize',()=>{ resizeBgCanvas(); initParticles(); if(document.getElementById('game-screen').classList.contains('active')) refreshMap(); });
+resizeBgCanvas(); initParticles(); animateBg(); runLoading();
 </script>
 </body>
 </html>
